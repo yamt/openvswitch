@@ -306,7 +306,8 @@ AC_DEFUN([OVS_CHECK_IF_PACKET],
 
 dnl Checks for net/if_dl.h.
 dnl
-dnl (We use this as a proxy for checking whether we're building on FreeBSD.)
+dnl (We use this as a proxy for checking whether we're building on FreeBSD
+dnl or NetBSD.)
 AC_DEFUN([OVS_CHECK_IF_DL],
   [AC_CHECK_HEADER([net/if_dl.h],
                    [HAVE_IF_DL=yes],
