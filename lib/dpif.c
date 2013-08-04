@@ -536,6 +536,9 @@ dpif_port_del(struct dpif *dpif, odp_port_t port_no)
 
     COVERAGE_INC(dpif_port_del);
 
+    if (port_no == ODPP_NONE) {
+        return 0;
+    }
     error = dpif->dpif_class->port_del(dpif, port_no);
     if (!error) {
         VLOG_DBG_RL(&dpmsg_rl, "%s: port_del(%"PRIu32")",
