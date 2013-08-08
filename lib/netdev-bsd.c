@@ -147,12 +147,12 @@ static void ifr_set_flags(struct ifreq *, int flags);
 static int af_link_ioctl(int command, const void *arg);
 #endif
 
-static int netdev_bsd_init(void);
+static void netdev_bsd_run(void);
 
 static bool
 is_netdev_bsd_class(const struct netdev_class *netdev_class)
 {
-    return netdev_class->init == netdev_bsd_init;
+    return netdev_class->run == netdev_bsd_run;
 }
 
 static struct netdev_bsd *
@@ -240,7 +240,7 @@ netdev_bsd_cache_cb(const struct rtbsd_change *change,
             dev = netdev_bsd_cast(netdev);
             dev->cache_valid = 0;
             netdev_bsd_changed(dev);
-            netdev_close(dev);
+            netdev_close(&dev->up);
         }
         shash_destroy(&device_shash);
     }
@@ -317,6 +317,7 @@ netdev_bsd_construct_tap(struct netdev *netdev_)
     struct netdev_bsd *netdev = netdev_bsd_cast(netdev_);
     int error = 0;
     struct ifreq ifr;
+    const char *name = netdev_->name;
     char *kernel_name = NULL;
 
     error = cache_notifier_ref();
@@ -328,7 +329,7 @@ netdev_bsd_construct_tap(struct netdev *netdev_)
 
     /* Create a tap device by opening /dev/tap.  The TAPGIFNAME ioctl is used
      * to retrieve the name of the tap device. */
-    ovs_mutex_init(&netdev->mutex);
+    ovs_mutex_init(&netdev->mutex, PTHREAD_MUTEX_NORMAL);
     netdev->tap_fd = open("/dev/tap", O_RDWR);
     netdev->change_seq = 1;
     if (netdev->tap_fd < 0) {
@@ -714,7 +715,7 @@ netdev_bsd_send(struct netdev *netdev_, const void *data, size_t size)
         }
     }
 
-    ovs_mutex_unlock(&netdev->mutex);
+    ovs_mutex_unlock(&dev->mutex);
     return error;
 }
 
@@ -1425,8 +1426,10 @@ const struct netdev_class netdev_bsd_class = {
     NULL, /* init */
     netdev_bsd_run,
     netdev_bsd_wait,
-    netdev_bsd_create_system,
-    netdev_bsd_destroy,
+    netdev_bsd_alloc,
+    netdev_bsd_construct_system,
+    netdev_bsd_destruct,
+    netdev_bsd_dealloc,
     NULL, /* get_config */
     NULL, /* set_config */
     NULL, /* get_tunnel_config */
@@ -1486,13 +1489,13 @@ const struct netdev_class netdev_tap_class = {
     NULL, /* init */
     netdev_bsd_run,
     netdev_bsd_wait,
-    netdev_bsd_create_tap,
-    netdev_bsd_destroy,
+    netdev_bsd_alloc,
+    netdev_bsd_construct_tap,
+    netdev_bsd_destruct,
+    netdev_bsd_dealloc,
     NULL, /* get_config */
     NULL, /* set_config */
     NULL, /* get_tunnel_config */
-
-    netdev_bsd_rx_open,
 
     netdev_bsd_send,
     netdev_bsd_send_wait,
