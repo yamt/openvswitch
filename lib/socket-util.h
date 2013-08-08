@@ -99,8 +99,8 @@ int recv_data_and_fds(int sock,
 
 /* Helpers for calling ioctl() on an AF_INET socket. */
 struct ifreq;
-int af_inet_ioctl(int command, const void *arg);
+int af_inet_ioctl(unsigned long command, const void *arg);
 int af_inet_ifreq_ioctl(const char *name, struct ifreq *,
-                        int cmd, const char *cmd_name);
+                        unsigned long cmd, const char *cmd_name);
 
 #endif /* socket-util.h */

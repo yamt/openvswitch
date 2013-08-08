@@ -1358,7 +1358,7 @@ error:
 /* Calls ioctl() on an AF_INET sock, passing the specified 'command' and
  * 'arg'.  Returns 0 if successful, otherwise a positive errno value. */
 int
-af_inet_ioctl(int command, const void *arg)
+af_inet_ioctl(unsigned long command, const void *arg)
 {
     static struct ovsthread_once once = OVSTHREAD_ONCE_INITIALIZER;
     static int sock;
@@ -1378,7 +1378,7 @@ af_inet_ioctl(int command, const void *arg)
 }
 
 int
-af_inet_ifreq_ioctl(const char *name, struct ifreq *ifr, int cmd,
+af_inet_ifreq_ioctl(const char *name, struct ifreq *ifr, unsigned long cmd,
                     const char *cmd_name)
 {
     int error;
