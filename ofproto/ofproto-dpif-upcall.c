@@ -814,6 +814,11 @@ handle_miss_upcalls(struct udpif *udpif, struct list *upcalls)
         }
     }
 
+    LIST_FOR_EACH_SAFE (upcall, next, list_node, upcalls) {
+        list_remove(&upcall->list_node);
+        upcall_destroy(upcall);
+    }
+
     atomic_read(&udpif->reval_seq, &reval_seq);
     if (reval_seq != fmb->reval_seq) {
         COVERAGE_INC(fmb_queue_revalidated);
