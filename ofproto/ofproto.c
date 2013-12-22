@@ -4660,7 +4660,21 @@ handle_barrier_request(struct ofconn *ofconn, const struct ofp_header *oh)
 {
     struct ofpbuf *buf;
 
-    if (ofconn_has_pending_opgroups(ofconn)) {
+    /*
+     * OpenFlow 1.4.0 p.110:
+     *    A OFPMP_FLOW_MONITOR multipart reply can not cross a barrier
+     *    handshake.  The switch must always send the OFPMP_FLOW_MONITOR
+     *    multipart reply for a given flow table change before the reply
+     *    to a OFPT_BARRIER_REQUEST request that follows the request
+     *    responsible for the flow table change.
+     *
+     * The spec seems unclear what to do for multiple connections, though.
+     * We serialize only flow monitor replies on our connection.
+     * We don't care which connection has made flow modifications triggering
+     * the flow monitor replies.
+     */
+    if (ofconn_has_pending_opgroups(ofconn) ||
+        ofconn_has_pending_monitor(ofconn)) {
         return OFPROTO_POSTPONE;
     }
 

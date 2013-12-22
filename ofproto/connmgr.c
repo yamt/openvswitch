@@ -1119,6 +1119,30 @@ ofconn_pktbuf_retrieve(struct ofconn *ofconn, uint32_t id,
     return pktbuf_retrieve(ofconn->pktbuf, id, bufferp, in_port);
 }
 
+/* Returns true if 'ofconn' has any pending flow monitor updates. */
+static bool
+ofconn_has_pending_monitor__(const struct ofconn *ofconn)
+{
+
+    /*
+     * Due to the way this function is currently used,
+     * ofconn->updates is always empty.
+     */
+    ovs_assert(list_is_empty(&ofconn->updates));
+    return ofconn->monitor_paused;
+}
+
+bool
+ofconn_has_pending_monitor(const struct ofconn *ofconn)
+{
+    bool result;
+
+    ovs_mutex_lock(&ofproto_mutex);
+    result = ofconn_has_pending_monitor__(ofconn);
+    ovs_mutex_unlock(&ofproto_mutex);
+    return result;
+}
+
 /* Returns true if 'ofconn' has any pending opgroups. */
 bool
 ofconn_has_pending_opgroups(const struct ofconn *ofconn)
@@ -2041,6 +2065,20 @@ ofmonitor_report(struct connmgr *mgr, struct rule *rule,
     }
 }
 
+static bool
+ofmonitor_has_pending(struct connmgr *mgr)
+    OVS_REQUIRES(ofproto_mutex)
+{
+    struct ofconn *ofconn;
+
+    LIST_FOR_EACH (ofconn, node, &mgr->all_conns) {
+        if (ofconn_has_pending_monitor__(ofconn)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void
 ofmonitor_flush(struct connmgr *mgr)
     OVS_REQUIRES(ofproto_mutex)
@@ -2067,6 +2105,9 @@ ofmonitor_flush(struct connmgr *mgr)
             }
         }
     }
+    if (!ofmonitor_has_pending(mgr)) {
+        connmgr_retry(mgr);
+    }
 }
 
 static void
@@ -2092,6 +2133,9 @@ ofmonitor_resume(struct ofconn *ofconn)
     ofconn_send_replies(ofconn, &msgs);
 
     ofconn->monitor_paused = 0;
+    if (!ofmonitor_has_pending(ofconn->connmgr)) {
+        connmgr_retry(ofconn->connmgr);
+    }
 }
 
 static bool
