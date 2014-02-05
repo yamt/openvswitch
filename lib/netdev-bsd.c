@@ -548,7 +548,7 @@ struct pcap_arg {
 static void
 proc_pkt(u_char *args_, const struct pcap_pkthdr *hdr, const u_char *packet)
 {
-    struct pcap_arg *args = (struct pcap_arg *)args_;
+    struct pcap_arg *args = (void *) args_;
 
     if (args->size < hdr->len) {
         VLOG_WARN_RL(&rl, "packet truncated");
@@ -1111,9 +1111,7 @@ netdev_bsd_get_in4(const struct netdev *netdev_, struct in_addr *in4,
         error = af_inet_ifreq_ioctl(netdev_get_kernel_name(netdev_), &ifr,
                                     SIOCGIFADDR, "SIOCGIFADDR");
         if (!error) {
-            const struct sockaddr_in *sin;
-
-            sin = (struct sockaddr_in *) &ifr.ifr_addr;
+            const struct sockaddr_in *sin = (const void *) &ifr.ifr_addr;
             netdev->in4 = sin->sin_addr;
             netdev->cache_valid |= VALID_IN4;
             error = af_inet_ifreq_ioctl(netdev_get_kernel_name(netdev_), &ifr,
@@ -1181,7 +1179,7 @@ netdev_bsd_get_in6(const struct netdev *netdev_, struct in6_addr *in6)
         for (ifa = head; ifa; ifa = ifa->ifa_next) {
             if (ifa->ifa_addr->sa_family == AF_INET6 &&
                     !strcmp(ifa->ifa_name, netdev_name)) {
-                sin6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+                sin6 = (void *) ifa->ifa_addr;
                 if (sin6) {
                     memcpy(&netdev->in6, &sin6->sin6_addr, sin6->sin6_len);
                     netdev->cache_valid |= VALID_IN6;
@@ -1292,15 +1290,13 @@ netdev_bsd_get_next_hop(const struct in_addr *host OVS_UNUSED,
             const struct sockaddr *sa = (const void *)cp;
 
             if ((i == RTA_GATEWAY) && sa->sa_family == AF_INET) {
-                const struct sockaddr_in * const sin =
-                  (const struct sockaddr_in *)sa;
+                const struct sockaddr_in * const sin = (const void *) sa;
 
                 *next_hop = sin->sin_addr;
                 gateway = true;
             }
             if ((i == RTA_IFP) && sa->sa_family == AF_LINK) {
-                const struct sockaddr_dl * const sdl =
-                  (const struct sockaddr_dl *)sa;
+                const struct sockaddr_dl * const sdl = (const void *) sa;
                 char *kernel_name;
 
                 kernel_name = xmemdup0(sdl->sdl_data, sdl->sdl_nlen);
@@ -1609,7 +1605,7 @@ get_etheraddr(const char *netdev_name, uint8_t ea[ETH_ADDR_LEN])
     for (ifa = head; ifa; ifa = ifa->ifa_next) {
         if (ifa->ifa_addr->sa_family == AF_LINK) {
             if (!strcmp(ifa->ifa_name, netdev_name)) {
-                sdl = (struct sockaddr_dl *)ifa->ifa_addr;
+                sdl = (void *) ifa->ifa_addr;
                 if (sdl) {
                     memcpy(ea, LLADDR(sdl), sdl->sdl_alen);
                     freeifaddrs(head);
