@@ -45,7 +45,6 @@ route_table_get_name(ovs_be32 ip, char name[IFNAMSIZ])
     } rtmsg;
 
     struct rt_msghdr *rtm = &rtmsg.rtm;
-    struct sockaddr_dl *ifp = NULL;
     struct sockaddr_in *sin;
     struct sockaddr *sa;
     static int seq;
@@ -88,8 +87,10 @@ route_table_get_name(ovs_be32 ip, char name[IFNAMSIZ])
     for (i = 1; i; i <<= 1) {
         if (rtm->rtm_addrs & i) {
             if (i == RTA_IFP && sa->sa_family == AF_LINK &&
-              ((struct sockaddr_dl *)sa)->sdl_nlen) {
-                ifp = (struct sockaddr_dl *)sa;
+              ALIGNED_CAST(const struct sockaddr_dl *, sa)->sdl_nlen) {
+                const struct sockaddr_dl *ifp =
+                  ifp = ALIGNED_CAST(struct sockaddr_dl *, sa);
+
                 namelen = ifp->sdl_nlen;
                 if (namelen > IFNAMSIZ - 1)
                     namelen = IFNAMSIZ - 1;
