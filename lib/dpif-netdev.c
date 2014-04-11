@@ -2173,6 +2173,7 @@ dp_execute_cb(void *aux_, struct ofpbuf *packet,
     case OVS_ACTION_ATTR_PUSH_MPLS:
     case OVS_ACTION_ATTR_POP_MPLS:
     case OVS_ACTION_ATTR_SET:
+    case OVS_ACTION_ATTR_SET_MASKED:
     case OVS_ACTION_ATTR_SAMPLE:
     case OVS_ACTION_ATTR_UNSPEC:
     case __OVS_ACTION_ATTR_MAX:

@@ -601,6 +601,10 @@ enum ovs_action_attr {
 	OVS_ACTION_ATTR_PUSH_MPLS,    /* struct ovs_action_push_mpls. */
 	OVS_ACTION_ATTR_POP_MPLS,     /* __be16 ethertype. */
 	OVS_ACTION_ATTR_RECIRC,	      /* struct ovs_action_recirc. */
+	OVS_ACTION_ATTR_SET_MASKED,   /* One nested OVS_KEY_ATTR_* including
+				       * data immediately followed by a mask.
+				       * The data must be zero for the unmasked
+				       * bits. */
 	__OVS_ACTION_ATTR_MAX
 };
 
