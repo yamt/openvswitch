@@ -102,6 +102,10 @@ struct xbridge {
     /* Number of MPLS label stack entries that the datapath supports
      * in matches. */
     size_t max_mpls_depth;
+
+    /* True if the datapath supports masked data in OVS_ACTION_ATTR_SET
+     * actions. */
+    bool masked_set_action;
 };
 
 struct xbundle {
@@ -264,7 +268,8 @@ xlate_ofproto_set(struct ofproto_dpif *ofproto, const char *name,
                   bool forward_bpdu, bool has_in_band,
                   bool enable_recirc,
                   bool variable_length_userdata,
-                  size_t max_mpls_depth)
+                  size_t max_mpls_depth,
+                  bool masked_set_action)
 {
     struct xbridge *xbridge = xbridge_lookup(ofproto);
 
@@ -319,6 +324,7 @@ xlate_ofproto_set(struct ofproto_dpif *ofproto, const char *name,
     xbridge->enable_recirc = enable_recirc;
     xbridge->variable_length_userdata = variable_length_userdata;
     xbridge->max_mpls_depth = max_mpls_depth;
+    xbridge->masked_set_action = masked_set_action;
 }
 
 void
