@@ -585,7 +585,13 @@ struct ovs_action_recirc {
  * indicate the new packet contents. This could potentially still be
  * %ETH_P_MPLS if the resulting MPLS label stack is not empty.  If there
  * is no MPLS label stack, as determined by ethertype, no action is taken.
- * @OVS_ACTION_RECIRC: Recirculate within the data path.
+ * @OVS_ACTION_ATTR_RECIRC: Recirculate within the data path.
+ * @OVS_ACTION_ATTR_SET_MASKED: Replaces the contents of an existing header.  A
+ * nested %OVS_KEY_ATTR_* attribute specifies a header to modify, its value,
+ * and a mask.  For every bit set to one in the mask, the corresponding header
+ * field bit is set to the one in value, rest of the bits are left unchanged.
+ * These non-significant bits must be passed in as zeroes, though.  Masking is
+ * not supported for the %OVS_KEY_ATTR_TUNNEL attribute.
  *
  * Only a single header can be set with a single %OVS_ACTION_ATTR_SET.  Not all
  * fields within a header are modifiable, e.g. the IPv4 protocol and fragment

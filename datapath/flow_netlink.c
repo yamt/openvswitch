@@ -1274,21 +1274,41 @@ static int validate_and_copy_set_tun(const struct nlattr *attr,
 	return err;
 }
 
+/* Return false if there are any non-masked bits set.
+ * Mask follows data immediately, before any netlink padding. */
+static bool validate_masked(u8 *data, int len)
+{
+	u8 *mask = data + len;
+
+	while (len--)
+		if (*data++ & ~*mask++)
+			return false;
+	return true;
+}
+
 static int validate_set(const struct nlattr *a,
 			const struct sw_flow_key *flow_key,
 			struct sw_flow_actions **sfa,
-			bool *set_tun)
+			bool *set_tun, bool masked)
 {
 	const struct nlattr *ovs_key = nla_data(a);
 	int key_type = nla_type(ovs_key);
+	size_t key_len;
 
 	/* There can be only one key in a action */
 	if (nla_total_size(nla_len(ovs_key)) != nla_len(a))
 		return -EINVAL;
 
+	key_len = nla_len(ovs_key);
+	if (masked)
+		key_len /= 2;
+
 	if (key_type > OVS_KEY_ATTR_MAX ||
-	    (ovs_key_lens[key_type] != nla_len(ovs_key) &&
+	    (ovs_key_lens[key_type] != key_len &&
 	     ovs_key_lens[key_type] != -1))
+		return -EINVAL;
+
+	if (masked && !validate_masked(nla_data(ovs_key), key_len))
 		return -EINVAL;
 
 	switch (key_type) {
@@ -1316,12 +1336,19 @@ static int validate_set(const struct nlattr *a,
 			return -EINVAL;
 
 		ipv4_key = nla_data(ovs_key);
-		if (ipv4_key->ipv4_proto != flow_key->ip.proto)
-			return -EINVAL;
+		if (masked) {
+			const struct ovs_key_ipv4 *mask = ipv4_key + 1;
 
-		if (ipv4_key->ipv4_frag != flow_key->ip.frag)
-			return -EINVAL;
+			/* Non-writeable fields. */
+			if (mask->ipv4_proto || mask->ipv4_frag)
+				return -EINVAL;
+		} else {
+			if (ipv4_key->ipv4_proto != flow_key->ip.proto)
+				return -EINVAL;
 
+			if (ipv4_key->ipv4_frag != flow_key->ip.frag)
+				return -EINVAL;
+		}
 		break;
 
 	case OVS_KEY_ATTR_IPV6:
@@ -1332,12 +1359,19 @@ static int validate_set(const struct nlattr *a,
 			return -EINVAL;
 
 		ipv6_key = nla_data(ovs_key);
-		if (ipv6_key->ipv6_proto != flow_key->ip.proto)
-			return -EINVAL;
+		if (masked) {
+			const struct ovs_key_ipv6 *mask = ipv6_key + 1;
 
-		if (ipv6_key->ipv6_frag != flow_key->ip.frag)
-			return -EINVAL;
+			/* Non-writeable fields. */
+			if (mask->ipv6_proto || mask->ipv6_frag)
+				return -EINVAL;
+		} else {
+			if (ipv6_key->ipv6_proto != flow_key->ip.proto)
+				return -EINVAL;
 
+			if (ipv6_key->ipv6_frag != flow_key->ip.frag)
+				return -EINVAL;
+		}
 		if (ntohl(ipv6_key->ipv6_label) & 0xFFF00000)
 			return -EINVAL;
 
@@ -1422,6 +1456,7 @@ int ovs_nla_copy_actions(const struct nlattr *attr,
 			[OVS_ACTION_ATTR_PUSH_VLAN] = sizeof(struct ovs_action_push_vlan),
 			[OVS_ACTION_ATTR_POP_VLAN] = 0,
 			[OVS_ACTION_ATTR_SET] = (u32)-1,
+			[OVS_ACTION_ATTR_SET_MASKED] = (u32)-1,
 			[OVS_ACTION_ATTR_SAMPLE] = (u32)-1
 		};
 		const struct ovs_action_push_vlan *vlan;
@@ -1462,7 +1497,13 @@ int ovs_nla_copy_actions(const struct nlattr *attr,
 			break;
 
 		case OVS_ACTION_ATTR_SET:
-			err = validate_set(a, key, sfa, &skip_copy);
+			err = validate_set(a, key, sfa, &skip_copy, false);
+			if (err)
+				return err;
+			break;
+
+		case OVS_ACTION_ATTR_SET_MASKED:
+			err = validate_set(a, key, sfa, &skip_copy, true);
 			if (err)
 				return err;
 			break;
