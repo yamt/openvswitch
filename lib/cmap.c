@@ -690,7 +690,9 @@ cmap_replace__(struct cmap_impl *impl, struct cmap_node *node,
         replacement = cmap_node_next_protected(node);
     } else {
         /* 'replacement' takes the position of 'node' in the list. */
-        ovsrcu_init(&replacement->next, cmap_node_next_protected(node));
+        struct cmap_node *next = cmap_node_next_protected(node);
+
+        ovsrcu_init(&replacement->next, next);
     }
 
     struct cmap_node *iter = &b->nodes[slot];
