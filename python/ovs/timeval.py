@@ -16,6 +16,7 @@ import sys
 import time
 
 LIBRT = 'librt.so.1'
+clock_gettime_name = 'clock_gettime'
 
 try:
     import ctypes
@@ -26,6 +27,11 @@ try:
     elif sys.platform.startswith("netbsd"):
         CLOCK_MONOTONIC = 3
         time_t = ctypes.c_int64
+        # NetBSD uses function renaming for ABI versioning.  While the proper
+        # way to get the appropriate version is of course "#include <time.h>",
+        # it is difficult with ctypes.  The following is appropriate for
+        # recent versions of NetBSD, including NetBSD-6.
+        clock_gettime_name = '__clock_gettime50'
     elif sys.platform.startswith("freebsd"):
         CLOCK_MONOTONIC = 4
         time_t = ctypes.c_int64
@@ -39,7 +45,7 @@ try:
         ]
 
     librt = ctypes.CDLL(LIBRT)
-    clock_gettime = librt.clock_gettime
+    clock_gettime = getattr(librt, clock_gettime_name)
     clock_gettime.argtypes = [ctypes.c_int, ctypes.POINTER(timespec)]
 except:
     # Librt shared library could not be loaded
