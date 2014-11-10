@@ -157,6 +157,7 @@ lib_libopenvswitch_la_SOURCES = \
 	lib/ovs-atomic.h \
 	lib/ovs-rcu.c \
 	lib/ovs-rcu.h \
+	lib/ovs-router.h \
 	lib/ovs-thread.c \
 	lib/ovs-thread.h \
 	lib/ovsdb-data.c \
@@ -319,7 +320,7 @@ lib_libopenvswitch_la_SOURCES += \
 	lib/ovs-numa.c \
 	lib/ovs-numa.h \
 	lib/ovs-router.c \
-	lib/ovs-router.h \
+	lib/ovs-router-linux.h \
 	lib/rtnetlink-link.c \
 	lib/rtnetlink-link.h \
 	lib/route-table.c \
