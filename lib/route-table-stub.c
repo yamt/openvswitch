@@ -19,16 +19,12 @@
 #include "route-table.h"
 
 bool
-ovs_router_lookup(ovs_be32 ip_dst OVS_UNUSED, char output_bridge[] OVS_UNUSED,
-                  ovs_be32 *gw)
+route_table_fallback_lookup(ovs_be32 ip_dst OVS_UNUSED,
+                            char output_bridge[] OVS_UNUSED,
+                            ovs_be32 *gw)
 {
     *gw = 0;
     return false;
-}
-
-void
-ovs_router_unixctl_register(void)
-{
 }
 
 uint64_t

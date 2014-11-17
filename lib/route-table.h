@@ -30,5 +30,6 @@ void route_table_register(void);
 void route_table_unregister(void);
 void route_table_run(void);
 void route_table_wait(void);
+bool route_table_fallback_lookup(ovs_be32, char [], ovs_be32 *);
 
 #endif /* route-table.h */

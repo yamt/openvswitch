@@ -36,7 +36,7 @@ static int pid;
 static unsigned int register_count = 0;
 
 bool
-ovs_router_lookup(ovs_be32 ip, char name[], ovs_be32 *gw)
+route_table_fallback_lookup(ovs_be32 ip, char name[], ovs_be32 *gw)
 {
     struct {
         struct rt_msghdr rtm;
@@ -139,10 +139,5 @@ route_table_run(void)
 
 void
 route_table_wait(void)
-{
-}
-
-void
-ovs_router_unixctl_register(void)
 {
 }
