@@ -308,6 +308,7 @@ ovs_router_flush(void)
 void
 ovs_router_unixctl_register(void)
 {
+    route_table_register();
     classifier_init(&cls, NULL);
     unixctl_command_register("ovs/route/add", "ipv4_addr/prefix_len out_br_name gw", 2, 3,
                              ovs_router_add, NULL);
