@@ -30,8 +30,10 @@
 #include <unistd.h>
 
 #include "ovs-router.h"
+#include "ovs-thread.h"
 #include "util.h"
 
+static struct ovs_mutex route_table_mutex = OVS_MUTEX_INITIALIZER;
 static int pid;
 static unsigned int register_count = 0;
 
@@ -123,27 +125,35 @@ route_table_get_change_seq(void)
 
 void
 route_table_register(void)
+    OVS_EXCLUDED(route_table_mutex)
 {
+    ovs_mutex_lock(&route_table_mutex);
     if (!register_count)
     {
         pid = getpid();
     }
 
     register_count++;
+    ovs_mutex_unlock(&route_table_mutex);
 }
 
 void
 route_table_unregister(void)
+    OVS_EXCLUDED(route_table_mutex)
 {
+    ovs_mutex_lock(&route_table_mutex);
     register_count--;
+    ovs_mutex_unlock(&route_table_mutex);
 }
 
 void
 route_table_run(void)
+    OVS_EXCLUDED(route_table_mutex)
 {
 }
 
 void
 route_table_wait(void)
+    OVS_EXCLUDED(route_table_mutex)
 {
 }
