@@ -8,10 +8,18 @@ AT_CHECK([ovs-appctl dpctl/add-dp dummy@br0], [2], [],
 ovs-appctl: ovs-vswitchd: server returned an error
 ])
 AT_CHECK([ovs-appctl dpctl/del-dp dummy@br0])
-AT_CHECK([ovs-appctl dpctl/del-dp dummy@br0], [2], [],
-  [ovs-vswitchd: opening datapath (No such device)
+# NOTE: strerror(ENODEV) varies on platforms
+if test "$IS_BSD" = "yes"; then
+    AT_CHECK([ovs-appctl dpctl/del-dp dummy@br0], [2], [],
+      [ovs-vswitchd: opening datapath (Operation not supported by device)
 ovs-appctl: ovs-vswitchd: server returned an error
 ])
+else
+    AT_CHECK([ovs-appctl dpctl/del-dp dummy@br0], [2], [],
+      [ovs-vswitchd: opening datapath (No such device)
+ovs-appctl: ovs-vswitchd: server returned an error
+])
+fi
 OVS_VSWITCHD_STOP
 AT_CLEANUP
 
@@ -71,10 +79,18 @@ AT_CHECK([ovs-appctl dpctl/del-if dummy@br0 br0], [2], [],
 ovs-appctl: ovs-vswitchd: server returned an error
 ])
 AT_CHECK([ovs-appctl dpctl/del-dp dummy@br0])
-AT_CHECK([ovs-appctl dpctl/del-if dummy@br0 br0], [2], [],
-  [ovs-vswitchd: opening datapath (No such device)
+# NOTE: strerror(ENODEV) varies on platforms
+if test "$IS_BSD" = "yes"; then
+    AT_CHECK([ovs-appctl dpctl/del-if dummy@br0 br0], [2], [],
+      [ovs-vswitchd: opening datapath (Operation not supported by device)
 ovs-appctl: ovs-vswitchd: server returned an error
 ])
+else
+    AT_CHECK([ovs-appctl dpctl/del-if dummy@br0 br0], [2], [],
+      [ovs-vswitchd: opening datapath (No such device)
+ovs-appctl: ovs-vswitchd: server returned an error
+])
+fi
 OVS_VSWITCHD_STOP(["/dummy@br0: port_del failed (Invalid argument)/d
 /dummy@br0: failed to add vif1.0 as port: File exists/d"])
 AT_CLEANUP
