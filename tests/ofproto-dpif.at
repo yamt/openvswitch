@@ -844,6 +844,7 @@ AT_CHECK([ovs-ofctl add-flows br0 flows.txt])
 AT_CHECK([ovs-ofctl mod-port br0 5 noforward])
 AT_CHECK([ovs-ofctl mod-port br0 6 noflood])
 
+sleep 1  # wait for revalidation
 AT_CHECK([ovs-appctl ofproto/trace ovs-dummy 'in_port(100),eth(src=00:00:00:00:00:01,dst=00:00:00:00:00:02),eth_type(0x0900)'], [0], [stdout])
 AT_CHECK([tail -1 stdout \
 | sed -e 's/Datapath actions: //' | tr ',' '\n' | sort], [0], [dnl
