@@ -667,6 +667,10 @@ bridge_reconfigure(const struct ovsrec_open_vswitch *ovs_cfg)
 
             LIST_FOR_EACH (iface, port_elem, &port->ifaces) {
                 iface_set_ofport(iface->cfg, iface->ofp_port);
+
+                ofproto_port_set_ofpname(br->ofproto, iface->ofp_port,
+                                         iface->cfg->ofname);
+
                 /* Clear eventual previous errors */
                 ovsrec_interface_set_error(iface->cfg, NULL);
                 iface_configure_cfm(iface);
@@ -1777,7 +1781,8 @@ iface_do_create(const struct bridge *br,
     }
 
     *ofp_portp = iface_pick_ofport(iface_cfg);
-    error = ofproto_port_add(br->ofproto, netdev, ofp_portp);
+    error = ofproto_port_add(br->ofproto, netdev, ofp_portp,
+                             iface_cfg->ofname);
     if (error) {
         goto error;
     }
@@ -1860,7 +1865,8 @@ iface_create(struct bridge *br, const struct ovsrec_interface *iface_cfg,
             error = netdev_open(port->name, "internal", &netdev);
             if (!error) {
                 ofp_port_t fake_ofp_port = OFPP_NONE;
-                ofproto_port_add(br->ofproto, netdev, &fake_ofp_port);
+                ofproto_port_add(br->ofproto, netdev, &fake_ofp_port,
+                                 iface_cfg->ofname);
                 netdev_close(netdev);
             } else {
                 VLOG_WARN("could not open network device %s (%s)",

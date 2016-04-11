@@ -288,7 +288,8 @@ int ofproto_port_dump_done(struct ofproto_port_dump *);
 
 const char *ofproto_port_open_type(const char *datapath_type,
                                    const char *port_type);
-int ofproto_port_add(struct ofproto *, struct netdev *, ofp_port_t *ofp_portp);
+int ofproto_port_add(struct ofproto *, struct netdev *, ofp_port_t *ofp_portp,
+                     const char *);
 int ofproto_port_del(struct ofproto *, ofp_port_t ofp_port);
 int ofproto_port_get_stats(const struct ofport *, struct netdev_stats *stats);
 
@@ -520,6 +521,12 @@ int ofproto_port_set_realdev(struct ofproto *, ofp_port_t vlandev_ofp_port,
 
 enum ofputil_table_miss ofproto_table_get_miss_config(const struct ofproto *,
                                                       uint8_t table_id);
+
+const char *ofproto_port_get_ofpname(struct ofproto *ofproto,
+                                     ofp_port_t ofp_port);
+void ofproto_port_set_ofpname(struct ofproto *ofproto,
+                              ofp_port_t ofp_port,
+                              const char *ofp_name);
 
 #ifdef  __cplusplus
 }

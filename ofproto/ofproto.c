@@ -550,6 +550,7 @@ ofproto_create(const char *datapath_name, const char *datapath_type,
     hmap_init(&ofproto->ofport_usage);
     shash_init(&ofproto->port_by_name);
     simap_init(&ofproto->ofp_requests);
+    smap_init(&ofproto->ofp_names);
     ofproto->max_ports = ofp_to_u16(OFPP_MAX);
     ofproto->eviction_group_timer = LLONG_MIN;
     ofproto->tables = NULL;
@@ -1546,6 +1547,7 @@ ofproto_destroy__(struct ofproto *ofproto)
     hmap_destroy(&ofproto->ofport_usage);
     shash_destroy(&ofproto->port_by_name);
     simap_destroy(&ofproto->ofp_requests);
+    smap_destroy(&ofproto->ofp_names);
 
     OFPROTO_FOR_EACH_TABLE (table, ofproto) {
         oftable_destroy(table);
@@ -1945,7 +1947,7 @@ ofproto_port_open_type(const char *datapath_type, const char *port_type)
  * 'ofp_portp' is non-null). */
 int
 ofproto_port_add(struct ofproto *ofproto, struct netdev *netdev,
-                 ofp_port_t *ofp_portp)
+                 ofp_port_t *ofp_portp, const char *ofp_name)
 {
     ofp_port_t ofp_port = ofp_portp ? *ofp_portp : OFPP_NONE;
     int error;
@@ -1956,6 +1958,9 @@ ofproto_port_add(struct ofproto *ofproto, struct netdev *netdev,
 
         simap_put(&ofproto->ofp_requests, netdev_name,
                   ofp_to_u16(ofp_port));
+        if (ofp_name) {
+            smap_replace(&ofproto->ofp_names, netdev_name, ofp_name);
+        }
         error = update_port(ofproto, netdev_name);
     }
     if (ofp_portp) {
@@ -2008,6 +2013,8 @@ ofproto_port_del(struct ofproto *ofproto, ofp_port_t ofp_port)
     if (ofp_request_node) {
         simap_delete(&ofproto->ofp_requests, ofp_request_node);
     }
+
+    smap_remove(&ofproto->ofp_names, name);
 
     error = ofproto->ofproto_class->port_del(ofproto, ofp_port);
     if (!error && ofport) {
@@ -2285,6 +2292,7 @@ ofport_open(struct ofproto *ofproto,
 {
     enum netdev_flags flags;
     struct netdev *netdev;
+    const char *ofp_name;
     int error;
 
     error = netdev_open(ofproto_port->name, ofproto_port->type, &netdev);
@@ -2307,7 +2315,13 @@ ofport_open(struct ofproto *ofproto,
     }
     pp->port_no = ofproto_port->ofp_port;
     netdev_get_etheraddr(netdev, &pp->hw_addr);
-    ovs_strlcpy(pp->name, ofproto_port->name, sizeof pp->name);
+
+    ofp_name = smap_get(&ofproto->ofp_names, ofproto_port->name);
+    if (!ofp_name) {
+        ofp_name = ofproto_port->name;
+    }
+    ovs_strlcpy(pp->name, ofp_name, sizeof pp->name);
+
     netdev_get_flags(netdev, &flags);
     pp->config = flags & NETDEV_UP ? 0 : OFPUTIL_PC_PORT_DOWN;
     pp->state = netdev_get_carrier(netdev) ? 0 : OFPUTIL_PS_LINK_DOWN;
@@ -8010,4 +8024,53 @@ ofproto_port_set_realdev(struct ofproto *ofproto, ofp_port_t vlandev_ofp_port,
                   netdev_get_name(ofport->netdev), ovs_strerror(error));
     }
     return error;
+}
+
+const char *
+ofproto_port_get_ofpname(struct ofproto *ofproto, ofp_port_t ofp_port)
+{
+    struct ofport *ofport;
+
+    ofport = ofproto_get_port(ofproto, ofp_port);
+    return (ofport ? ofport->pp.name : NULL);
+}
+
+void
+ofproto_port_set_ofpname(struct ofproto *ofproto, ofp_port_t ofp_port,
+                         const char *ofp_name)
+{
+    struct ofport *ofport;
+    const char *devname;
+    size_t name_size;
+
+    ofport = ofproto_get_port(ofproto, ofp_port);
+    if (!ofport) {
+        return;
+    }
+
+    devname = netdev_get_name(ofport->netdev);
+    name_size = sizeof(ofport->pp.name);
+
+    if (!devname ||
+        (ofp_name && !strncmp(ofp_name, ofport->pp.name, name_size - 1)) ||
+        (!ofp_name && !strncmp(devname, ofport->pp.name, name_size - 1))) {
+        /* No need to change port name. */
+        return;
+    }
+
+    /* Send a OFPPR_DELETE followed by OFPPR_ADD port_status message
+     * to notify controller a port name change. */
+    connmgr_send_port_status(ofproto->connmgr, NULL, &ofport->pp,
+                             OFPPR_DELETE);
+
+    if (!ofp_name) {
+        smap_remove(&ofproto->ofp_names, devname);
+        ovs_strlcpy(ofport->pp.name, devname, name_size);
+    } else {
+        smap_replace(&ofproto->ofp_names, netdev_get_name(ofport->netdev),
+                 ofp_name);
+        ovs_strlcpy(ofport->pp.name, ofp_name, name_size);
+    }
+    connmgr_send_port_status(ofproto->connmgr, NULL, &ofport->pp,
+                             OFPPR_ADD);
 }

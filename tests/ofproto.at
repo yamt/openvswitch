@@ -77,6 +77,66 @@ OFPT_GET_CONFIG_REPLY: frags=normal miss_send_len=0
 OVS_VSWITCHD_STOP
 AT_CLEANUP
 
+AT_SETUP([ofproto - set OpenFlow port name])
+OVS_VSWITCHD_START(
+       [add-port br0 p1 -- set Interface p1 type=dummy ofport_request=1 --\
+        add-port br0 p2 -- set Interface p2 type=dummy ofport_request=2 ofname=n2])
+check_ofname () {
+    AT_CHECK([ovs-ofctl -vwarn show br0], [0], [stdout])
+    echo >expout "OFPT_FEATURES_REPLY: dpid:fedcba9876543210
+n_tables:254, n_buffers:256
+capabilities: FLOW_STATS TABLE_STATS PORT_STATS QUEUE_STATS ARP_MATCH_IP
+actions: output enqueue set_vlan_vid set_vlan_pcp strip_vlan mod_dl_src mod_dl_dst mod_nw_src mod_nw_dst mod_nw_tos mod_tp_src mod_tp_dst
+ 1($1): addr:aa:55:aa:55:00:0x
+     config:     PORT_DOWN
+     state:      LINK_DOWN
+     speed: 0 Mbps now, 0 Mbps max
+ 2(n2): addr:aa:55:aa:55:00:0x
+     config:     PORT_DOWN
+     state:      LINK_DOWN
+     speed: 0 Mbps now, 0 Mbps max
+ LOCAL(br0): addr:aa:55:aa:55:00:0x
+     config:     PORT_DOWN
+     state:      LINK_DOWN
+     speed: 0 Mbps now, 0 Mbps max
+OFPT_GET_CONFIG_REPLY: frags=normal miss_send_len=0"
+    AT_CHECK([[sed '
+s/ (xid=0x[0-9a-fA-F]*)//
+s/00:0.$/00:0x/' < stdout]],
+      [0], [expout])
+}
+
+AT_CHECK([ovs-vsctl set Interface p1 ofname=p2])
+check_ofname p2
+
+AT_CHECK([ovs-ofctl -P standard monitor br0 --detach --no-chdir --pidfile])
+# Use NXT_SET_ASYNC_CONFIG to enable only port status message
+ovs-appctl -t ovs-ofctl ofctl/send 01040028000000020000232000000013000000000000000500000007000000020000000000000005
+ovs-appctl -t ovs-ofctl ofctl/set-output-file monitor.log
+AT_CHECK([ovs-vsctl set Interface p1 ofname=n2])
+check_ofname n2
+OVS_APP_EXIT_AND_WAIT([ovs-ofctl])
+AT_CHECK([[sed '
+s/ (xid=0x[0-9a-fA-F]*)//
+s/ *duration.*//
+s/00:0.$/00:0x/' < monitor.log]],
+      [0], [dnl
+OFPT_PORT_STATUS: DEL: 1(p2): addr:aa:55:aa:55:00:0x
+     config:     PORT_DOWN
+     state:      LINK_DOWN
+     speed: 0 Mbps now, 0 Mbps max
+OFPT_PORT_STATUS: ADD: 1(n2): addr:aa:55:aa:55:00:0x
+     config:     PORT_DOWN
+     state:      LINK_DOWN
+     speed: 0 Mbps now, 0 Mbps max
+])
+
+AT_CHECK([ovs-vsctl clear Interface p1 ofname])
+check_ofname p1
+
+OVS_VSWITCHD_STOP
+AT_CLEANUP
+
 dnl This is really bare-bones.
 dnl It at least checks request and reply serialization and deserialization.
 AT_SETUP([ofproto - port stats - (OpenFlow 1.0)])

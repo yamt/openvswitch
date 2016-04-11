@@ -1008,6 +1008,7 @@ static struct cmd_show_table cmd_show_tables[] = {
     {&ovsrec_table_interface,
      &ovsrec_interface_col_name,
      {&ovsrec_interface_col_type,
+      &ovsrec_interface_col_ofname,
       &ovsrec_interface_col_options,
       &ovsrec_interface_col_error},
      {NULL, NULL, NULL}

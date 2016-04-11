@@ -1,6 +1,6 @@
 {"name": "Open_vSwitch",
- "version": "7.12.1",
- "cksum": "2211824403 22535",
+ "version": "7.12.2",
+ "cksum": "2908883136 22611",
  "tables": {
    "Open_vSwitch": {
      "columns": {
@@ -203,6 +203,8 @@
          "mutable": false},
        "type": {
          "type": "string"},
+       "ofname": {
+         "type": {"key": "string", "min": 0, "max": 1}},
        "options": {
          "type": {"key": "string", "value": "string", "min": 0, "max": "unlimited"}},
        "ingress_policing_rate": {

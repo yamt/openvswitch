@@ -1731,6 +1731,20 @@
         on a host.
       </column>
 
+
+      <column name="ofname">
+        <p>
+          OpenFlow port name for this interface. This name is truncated to
+          <code>OFP_MAX_PORT_NAME_LEN-1</code>, and reported to controllers in
+          port description. If not set, <ref column='name'/> is used.
+        </p>
+        <p>
+          OpenFlow does not have a way to announce a port name change, so if
+          <ref column="ofname"/> is changed, Open vSwitch represents it over
+          OpenFlow as a port deletion followed immediately by a port addition.
+        </p>
+      </column>
+
       <column name="ifindex">
         A positive interface index as defined for SNMP MIB-II in RFCs 1213 and
         2863, if the interface has one, otherwise 0.  The ifindex is useful for
