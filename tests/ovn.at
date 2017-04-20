@@ -6567,20 +6567,14 @@ as hv3 ovs-ofctl dump-flows br-int
 echo "--------------------------"
 
 # Check that redirect mapping is programmed only on hv2
-AT_CHECK([as hv1 ovs-ofctl dump-flows br-int table=33 | grep =0x3,metadata=0x1 | wc -l], [0], [0
-])
-AT_CHECK([as hv2 ovs-ofctl dump-flows br-int table=33 | grep =0x3,metadata=0x1 | grep load:0x2- | wc -l], [0], [1
-])
+AT_CHECK([test `as hv1 ovs-ofctl dump-flows br-int table=33 | grep =0x3,metadata=0x1 | wc -l` -eq 0])
+AT_CHECK([test `as hv2 ovs-ofctl dump-flows br-int table=33 | grep =0x3,metadata=0x1 | grep load:0x2- | wc -l` -eq 1])
 # Check that hv1 sends chassisredirect port traffic to hv2
-AT_CHECK([as hv1 ovs-ofctl dump-flows br-int table=32 | grep =0x3,metadata=0x1 | grep output | wc -l], [0], [1
-])
-AT_CHECK([as hv2 ovs-ofctl dump-flows br-int table=32 | grep =0x3,metadata=0x1 | wc -l], [0], [0
-])
+AT_CHECK([test `as hv1 ovs-ofctl dump-flows br-int table=32 | grep =0x3,metadata=0x1 | grep output | wc -l` -eq 1])
+AT_CHECK([test `as hv2 ovs-ofctl dump-flows br-int table=32 | grep =0x3,metadata=0x1 | wc -l` -eq 0])
 # Check that arp reply on distributed gateway port is only programmed on hv2
-AT_CHECK([as hv1 ovs-ofctl dump-flows br-int | grep arp | grep =0x2,metadata=0x1 | wc -l], [0], [0
-])
-AT_CHECK([as hv2 ovs-ofctl dump-flows br-int | grep arp | grep =0x2,metadata=0x1 | wc -l], [0], [1
-])
+AT_CHECK([test `as hv1 ovs-ofctl dump-flows br-int | grep arp | grep =0x2,metadata=0x1 | wc -l` -eq 0])
+AT_CHECK([test `as hv2 ovs-ofctl dump-flows br-int | grep arp | grep =0x2,metadata=0x1 | wc -l` -eq 1])
 
 
 ip_to_hex() {
