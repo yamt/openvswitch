@@ -1,0 +1,10 @@
+--- testsuite	2017-07-14 13:41:25.000000000 +0000
++++ testsuite	2017-07-14 13:44:04.000000000 +0000
+@@ -5959,6 +5959,7 @@ $as_echo "$as_me: WARNING: unable to par
+       echo >&7
+     ) &
+     $at_job_control_off
++    jobs > /dev/null || :  # drain the list of jobs
+     if $at_first; then
+       at_first=false
+       exec 6<"$at_job_fifo" 7>"$at_job_fifo"

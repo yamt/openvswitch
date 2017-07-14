@@ -12,7 +12,8 @@ EXTRA_DIST += \
 	tests/atlocal.in \
 	$(srcdir)/package.m4 \
 	$(srcdir)/tests/testsuite \
-	$(srcdir)/tests/testsuite.patch
+	$(srcdir)/tests/testsuite.patch \
+	$(srcdir)/tests/testsuite.unix.patch
 
 COMMON_MACROS_AT = \
 	tests/ovsdb-macros.at \
@@ -125,7 +126,11 @@ SYSTEM_OFFLOADS_TESTSUITE_AT = \
 check_SCRIPTS += tests/atlocal
 
 TESTSUITE = $(srcdir)/tests/testsuite
+if WIN32
 TESTSUITE_PATCH = $(srcdir)/tests/testsuite.patch
+else
+TESTSUITE_PATCH = $(srcdir)/tests/testsuite.unix.patch
+endif
 SYSTEM_KMOD_TESTSUITE = $(srcdir)/tests/system-kmod-testsuite
 SYSTEM_USERSPACE_TESTSUITE = $(srcdir)/tests/system-userspace-testsuite
 SYSTEM_OFFLOADS_TESTSUITE = $(srcdir)/tests/system-offloads-testsuite
@@ -249,16 +254,10 @@ clean-local:
 
 AUTOTEST = $(AUTOM4TE) --language=autotest
 
-if WIN32
 $(TESTSUITE): package.m4 $(TESTSUITE_AT) $(COMMON_MACROS_AT) $(TESTSUITE_PATCH)
 	$(AM_V_GEN)$(AUTOTEST) -I '$(srcdir)' -o testsuite.tmp $@.at
 	patch -p0 testsuite.tmp $(TESTSUITE_PATCH)
 	$(AM_V_at)mv testsuite.tmp $@
-else
-$(TESTSUITE): package.m4 $(TESTSUITE_AT) $(COMMON_MACROS_AT)
-	$(AM_V_GEN)$(AUTOTEST) -I '$(srcdir)' -o $@.tmp $@.at
-	$(AM_V_at)mv $@.tmp $@
-endif
 
 $(SYSTEM_KMOD_TESTSUITE): package.m4 $(SYSTEM_TESTSUITE_AT) $(SYSTEM_KMOD_TESTSUITE_AT) $(COMMON_MACROS_AT)
 	$(AM_V_GEN)$(AUTOTEST) -I '$(srcdir)' -o $@.tmp $@.at
